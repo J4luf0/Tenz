@@ -82,6 +82,13 @@ struct DefaultOrder {
     }
 };
 
+
+template <typename A, typename B, class T, class Type>
+concept a_or_b_or_both_a = 
+    (std::is_same_v<std::remove_cvref_t<A>, T> && std::is_same_v<std::remove_cvref_t<B>, Type>) ||
+    (std::is_same_v<std::remove_cvref_t<B>, T> && std::is_same_v<std::remove_cvref_t<A>, Type>) ||
+    (std::is_same_v<std::remove_cvref_t<A>, std::remove_cvref_t<B>> && std::is_same_v<std::remove_cvref_t<A>, Type>);
+
 }
 
 #endif

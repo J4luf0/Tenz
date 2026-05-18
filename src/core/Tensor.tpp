@@ -202,7 +202,7 @@ namespace gema {
     // PUBLIC METHODS: --------------------------------------------------------------------------------------------------------
 
     template <class T, MemoryBackendConcept<T> DataMB, MemoryBackendConcept<uint64_t> MetadataMB>
-    Tensor<T, DataMB, MetadataMB>::Tensor(const LinearContainer<uint64_t, MetadataMB>& newDimensionSizes) 
+    Tensor<T, DataMB, MetadataMB>::Tensor(const MetadataContainer& newDimensionSizes) 
     : dimensionSizes_(newDimensionSizes){
         update();
     }
@@ -214,7 +214,7 @@ namespace gema {
     // }
 
     template <class T, MemoryBackendConcept<T> DataMB, MemoryBackendConcept<uint64_t> MetadataMB>
-    Tensor<T, DataMB, MetadataMB>::Tensor(const LinearContainer<uint64_t, MetadataMB>& newDimensionSizes,
+    Tensor<T, DataMB, MetadataMB>::Tensor(const MetadataContainer& newDimensionSizes,
     const DataMB& memoryBackend)
     : tensor_(memoryBackend), dimensionSizes_(newDimensionSizes), dimensionJumps_(newDimensionSizes.getMemoryBackend()){ 
         update();
@@ -228,7 +228,7 @@ namespace gema {
 
     template <class T, MemoryBackendConcept<T> DataMB, MemoryBackendConcept<uint64_t> MetadataMB>
     inline Tensor<T, DataMB, MetadataMB>::Tensor
-    (const LinearContainer<uint64_t, MetadataMB>& newDimensionSizes, const LinearContainer<T, DataMB>& newData) 
+    (const MetadataContainer& newDimensionSizes, const DataContainer& newData) 
     : dimensionSizes_(newDimensionSizes), tensor_(newData), dimensionJumps_(newDimensionSizes.getMemoryBackend()){
 
         // Check actual capacity of dimensions to tensorData
@@ -445,7 +445,9 @@ namespace gema {
     }
 
     template <class T, MemoryBackendConcept<T> DataMB, MemoryBackendConcept<uint64_t> MetadataMB>
-    Tensor<T, DataMB, MetadataMB> Tensor<T, DataMB, MetadataMB>::transpositionAndReturn(const uint64_t dim1, const uint64_t dim2) const {
+    Tensor<T, DataMB, MetadataMB> Tensor<T, DataMB, MetadataMB>::transpositionAndReturn(
+        const uint64_t dim1, const uint64_t dim2
+    ) const {
 
         if(dim1 == dim2) return Tensor<T, DataMB, MetadataMB>(dimensionSizes_);
 
@@ -475,7 +477,7 @@ namespace gema {
             switched[dim2] = original[dim1];
 
             // Works until now, check the getIndex function if it actually works properly
-            tensorTransposed.tensor_[tensorTransposed.getIndex(switched)] = std::move(tensor_[i]);
+            tensorTransposed.tensor_[tensorTransposed.getIndex(switched)] = tensor_[i];
 
             //std::cout << original[0] << " " << original[1] << std::endl;
             Tensor<T, DataMB, MetadataMB>::incrementCoords(original, dimensionSizes_);

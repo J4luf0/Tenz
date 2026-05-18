@@ -96,12 +96,32 @@ namespace gema {
 
     template <class T, size_t Alignment>
     void MemoryBackend<T, Alignment>::copy(T* dest, const T* src, size_t count) const {
-        std::memcpy(dest, src, count * sizeof(T));
+
+        if constexpr(std::is_trivially_copyable_v<T>){
+            std::memcpy(dest, src, count * sizeof(T));
+        }else{
+            for(size_t i = 0; i < count; ++i){
+                dest[i] = src[i];
+            }
+        }
     }
 
     template <class T, size_t Alignment>
     T* MemoryBackend<T, Alignment>::memory_set(T* dest, size_t ch, size_t count) const {
+
+        static_assert(std::is_trivially_copyable_v<T>);
+        
         return static_cast<T*>(std::memset(dest, ch, count * sizeof(T)));
+    }
+
+    template <class T, size_t Alignment>
+    T* MemoryBackend<T, Alignment>::fill(T* dest, const T& value, size_t count) const{
+
+        for(size_t i = 0; i < count; ++i){
+            dest[i] = value;
+        }
+
+        return dest;
     }
 
     template <class T, size_t Alignment>
@@ -207,7 +227,7 @@ namespace gema {
     template <class T, size_t Alignment>
     template <MemoryBackendConcept<T> DestBackend, MemoryBackendConcept<T> SrcBackend>
     void MemoryBackend<T, Alignment>::copy_to_backend(
-        T *dest, const DestBackend &destBackend, const T *src, const SrcBackend &srcBackend, const uint64_t n)
+        T* dest, const DestBackend& destBackend, const T* src, const SrcBackend& srcBackend, const uint64_t n)
     {
 
         if constexpr(std::is_same_v<DestBackend, MemoryBackend<T>>){

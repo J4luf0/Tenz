@@ -56,14 +56,17 @@ namespace gema{
     
     template <class T, MemoryBackendConcept<T> IMemoryBackend>
     template <MemoryBackendConcept<T> IOtherMemoryBackend>
-    LinearContainer<T, IMemoryBackend>::LinearContainer
-    (const LinearContainer<T, IOtherMemoryBackend>& other, const IMemoryBackend& memoryBackend)
-    : memoryBackend_(memoryBackend){
+    LinearContainer<T, IMemoryBackend>::LinearContainer(
+        const LinearContainer<T, IOtherMemoryBackend>& other, 
+        const IMemoryBackend& memoryBackend
+    ) : memoryBackend_(memoryBackend){
 
         size_t otherSize = other.size();
         reserve(otherSize);
 
-        memoryBackend_.uninitialized_copy(other.begin(), other.end(), begin_);
+        MemoryBackend<T>::copy_to_backend(begin_, memoryBackend_, other.data(), other.memoryBackend_, otherSize);
+
+        //memoryBackend_.uninitialized_copy(other.begin(), other.end(), begin_);
 
         end_ = begin_ + otherSize;
     }
@@ -125,7 +128,6 @@ namespace gema{
     template<class T, MemoryBackendConcept<T> IMemoryBackend>
     LinearContainer<T, IMemoryBackend>::LinearContainer(LinearContainer<T, IMemoryBackend>&& other) noexcept 
     : memoryBackend_(std::move(other.memoryBackend_)){
-        //swap(other);
 
         begin_  = other.begin_;
         end_    = other.end_;
@@ -135,23 +137,17 @@ namespace gema{
     }
 
     template<class T, MemoryBackendConcept<T> IMemoryBackend>
-    LinearContainer<T, IMemoryBackend>& LinearContainer<T, IMemoryBackend>::operator=
-    (const LinearContainer<T, IMemoryBackend>& other) {
+    LinearContainer<T, IMemoryBackend>& LinearContainer<T, IMemoryBackend>::operator=(
+        const LinearContainer<T, IMemoryBackend>& other
+    ){
 
         if(this == &other) return *this;
         
-        memoryBackend_ = other.memoryBackend_;
-
         size_t otherSize = other.size();
 
-        if(otherSize > capacity()){
-            clear();
-            reserve(otherSize);
-        } else {
-            if constexpr(!std::is_trivially_destructible_v<T>){
-                memoryBackend_.destroy(begin_, end_);
-            }
-        }
+        clear();
+        memoryBackend_ = other.memoryBackend_;
+        reserve(otherSize);
 
         memoryBackend_.uninitialized_copy(other.begin_, other.begin_ + otherSize, begin_);
 
@@ -196,7 +192,9 @@ namespace gema{
 
     template <class T, MemoryBackendConcept<T> IMemoryBackend>
     LinearContainer<T, IMemoryBackend>::~LinearContainer(){
+    //std::cout << "here ~LinearContainer in" << std::endl;
         clear();
+    //std::cout << "here ~LinearContainer out" << std::endl;
     }
 
     template <class T, MemoryBackendConcept<T> IMemoryBackend>
@@ -212,7 +210,6 @@ namespace gema{
         T* oldBegin = begin_;
         size_t oldSize = size();
 
-        //T* newData = std::allocator_traits<A>::allocate(alloc_, n);
         T* newData = memoryBackend_.allocate(n);
 
         if(oldBegin){
@@ -223,7 +220,6 @@ namespace gema{
                 memoryBackend_.destroy(oldBegin, oldBegin + oldSize);
             }
 
-            //std::allocator_traits<A>::deallocate(alloc_, oldBegin, capacity());
             memoryBackend_.deallocate(begin_, capacity());
         }
 
@@ -282,9 +278,18 @@ namespace gema{
             return;
         }
 
+        size_t oldSize = size();
+        size_t newCap  = capacity() ? (capacity() + (capacity() / 2) + 8) : 8;
+
+        reserve(newCap);
+
+        memoryBackend_.construct_at(begin_ + oldSize, value);
+
+        end_ = begin_ + oldSize + 1;
+
         // // slow path (rare)
         // end_ = pos; // rollback
-        push_back_slow(value);
+        //push_back_slow(value);
     }
 
     template<class T, MemoryBackendConcept<T> IMemoryBackend>
@@ -317,13 +322,11 @@ namespace gema{
 
             T* newData = memoryBackend_.allocate(newCap);
 
-            // přesun před insert
+            // move
             memoryBackend_.uninitialized_move(begin_, begin_ + index, newData);
-
-            // vložení nového prvku
+            // insert the remaining
             memoryBackend_.construct_at(newData + index, value);
-
-            // přesun zbytku
+            // move rest
             memoryBackend_.uninitialized_move(begin_ + index, end_, newData + index + 1);
 
             // cleanup
@@ -333,9 +336,8 @@ namespace gema{
             begin_ = newData;
             end_   = newData + oldSize + 1;
             capEnd_= newData + newCap;
-        }
-        else{
-            // posun doprava (od konce)
+        }else{
+            // right shift
             memoryBackend_.construct_at(end_, *(end_ - 1));
 
             for(size_t i = oldSize - 1; i > index; --i){
@@ -354,17 +356,14 @@ namespace gema{
 
         size_t index = pos - begin_;
 
-        // znič prvek
         memoryBackend_.destroy_at(begin_ + index);
 
-        // posuň doleva
         for(size_t i = index; i < size() - 1; ++i){
             begin_[i] = std::move(begin_[i + 1]);
         }
 
         --end_;
 
-        // znič poslední (duplicitní)
         memoryBackend_.destroy_at(end_);
 
         return begin_ + index;
@@ -552,19 +551,19 @@ namespace gema{
     }
 
 
-    template<class T, MemoryBackendConcept<T> IMemoryBackend>
-    void LinearContainer<T, IMemoryBackend>::push_back_slow(const T& value){
+    // template<class T, MemoryBackendConcept<T> IMemoryBackend>
+    // void LinearContainer<T, IMemoryBackend>::push_back_slow(const T& value){
 
-        size_t oldSize = size();
-        size_t newCap  = capacity() ? (capacity() + (capacity() / 2) + 8) : 8;
+    //     size_t oldSize = size();
+    //     size_t newCap  = capacity() ? (capacity() + (capacity() / 2) + 8) : 8;
 
-        reserve(newCap);
+    //     reserve(newCap);
 
-        memoryBackend_.construct_at(begin_ + oldSize, value);
+    //     memoryBackend_.construct_at(begin_ + oldSize, value);
 
-        end_ = begin_ + oldSize + 1;
+    //     end_ = begin_ + oldSize + 1;
 
-    }
+    // }
 
     template<class T, MemoryBackendConcept<T> IMemoryBackend>
     void LinearContainer<T, IMemoryBackend>::fastFill(T* dest, size_t count, const T& value){
@@ -577,16 +576,11 @@ namespace gema{
                 return;
             }
 
-            for(size_t i = 0; i < count; ++i){
-                dest[i] = value;
-            }
+            memoryBackend_.fill(dest, value, count);
 
         }else{
 
-            // todo: je toto správně pro netriviálně kopírovatelné?
-            for(size_t i = 0; i < count; ++i){
-                dest[i] = value;
-            }
+            memoryBackend_.fill(dest, value, count);
         }
     }
 }

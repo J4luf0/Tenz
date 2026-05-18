@@ -239,6 +239,11 @@ namespace gema {
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
+    T* MemoryBackendUSM<T, Kind, Alignment>::fill(T* dest, const T& value, size_t count) const{
+        return queue_->fill<T>(dest, value, count).wait();
+    }
+
+    template <class T, sycl::usm::alloc Kind, size_t Alignment>
     bool MemoryBackendUSM<T, Kind, Alignment>::equals(const T *a, const T *b, size_t count) const{
 
         // Older but simpler/more reliable implementation
@@ -410,7 +415,7 @@ namespace gema {
             queue_->memcpy(dest, src, count * sizeof(T)).wait();
         } else {
 
-            // nejdřív raw bytes do temporary host storage
+            // raw bytes to temporary host storage
             std::unique_ptr<std::byte[]> rawBuffer(new std::byte[count * sizeof(T)]);
 
             queue_->memcpy(
@@ -419,10 +424,10 @@ namespace gema {
                 count * sizeof(T)
             ).wait();
 
-            // reinterpretace na host objekty
+            // to host objects
             T* tmp = reinterpret_cast<T*>(rawBuffer.get());
 
-            // bezpečné zkopírování do cílových host objektů
+            // safe copy to destination
             for(size_t i = 0; i < count; ++i) {
 
                 if constexpr(std::is_copy_assignable_v<T>) {
@@ -443,7 +448,7 @@ namespace gema {
             queue_->memcpy(dest, src, count * sizeof(T)).wait();
         } else {
 
-            // temporary shared storage aby kernel viděl objekty
+            // temporary shared storage
             T* tmp = sycl::malloc_shared<T>(
                 count,
                 *queue_
@@ -451,7 +456,7 @@ namespace gema {
 
             try {
 
-                // host copy do shared memory
+                // host copy to shared memory
                 for(size_t i = 0; i < count; ++i) {
                     std::construct_at(tmp + i, src[i]);
                 }

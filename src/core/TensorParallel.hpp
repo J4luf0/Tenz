@@ -119,6 +119,8 @@ class TensorParallel : /*public Tensor<T>,*/public AbstractOperation<TensorParal
 
     bool operator!=(const TensorParallel<T>& otherTensor) const;
 
+    std::partial_ordering operator<=>(const TensorParallel<T>& otherTensor) const;
+
 
 
 

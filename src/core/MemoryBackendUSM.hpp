@@ -47,6 +47,7 @@ class MemoryBackendUSM : public MemoryBackend<T, Alignment> {
 
     void copy(T* dest, const T* src, size_t count) const;
     T* memory_set(T* dest, size_t ch, size_t count ) const;
+    T* fill(T* dest, const T& value, size_t count ) const;
     bool equals(const T* a, const T* b, size_t count) const;
     std::partial_ordering compare(const T* a, const T* b, size_t count) const;
 

@@ -231,6 +231,11 @@ namespace gema{
     }
 
     template <class T>
+    std::partial_ordering TensorParallel<T>::operator<=>(const TensorParallel<T>& otherTensor) const{
+        return tensor_ <=> otherTensor.tensor_;
+    }
+
+    template <class T>
     TensorParallel<T> TensorParallel<T>::transpositionAndReturn(const uint64_t dim1, const uint64_t dim2) const {
 
         TensorParallel<T> newTensor(*this);

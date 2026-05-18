@@ -103,7 +103,6 @@ concept TensorConcept = requires(
 ) {
 
     requires std::same_as<typename Candidate::value_type, T>;
-    requires MemoryBackendConcept<typename Candidate::memory_backend, T>;
 
     requires std::constructible_from<Candidate, const Coords&>;
     requires std::copy_constructible<Candidate>;

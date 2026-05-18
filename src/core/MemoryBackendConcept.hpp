@@ -42,6 +42,7 @@ concept MemoryBackendConcept = requires(B b, const B cb, T* p, const T* cp, T va
 
     { cb.copy(p, cp, n) } -> std::same_as<void>;
     { cb.memory_set(p, ch, n) } -> std::same_as<T*>;
+    { cb.fill(p, value, n) } -> std::same_as<T*>;
     { cb.equals(cp, cp, n) } -> std::convertible_to<bool>;
     { cb.compare(cp, cp, n) } -> std::convertible_to<std::partial_ordering>;
 
