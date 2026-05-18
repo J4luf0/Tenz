@@ -309,15 +309,15 @@ namespace gema{
 
         // Copying the dimensionSizes
         // Change assigment to just construction of correct size
-        const MetadataContainer oldDimensionSizes = tensor_.dimensionSizes_;
+        const MetadataContainer oldDimensionSizes = tensor_.getDimensionSizes();
         span_view<uint64_t> oldDimensionSizesView{oldDimensionSizes};
 
         // Swapping the dimension sizes
-        const uint64_t temporaryDimensionSize1 = tensor_.dimensionSizes_[dim1];
-        tensor_.dimensionSizes_[dim1] = tensor_.dimensionSizes_[dim2];
-        tensor_.dimensionSizes_[dim2] = temporaryDimensionSize1;
+        const uint64_t temporaryDimensionSize1 = tensor_.getDimensionSizes()[dim1];
+        tensor_.getDimensionSizes()[dim1] = tensor_.getDimensionSizes()[dim2];
+        tensor_.getDimensionSizes()[dim2] = temporaryDimensionSize1;
 
-        span_view<uint64_t> newDimensionSizesView{tensor_.dimensionSizes_};
+        span_view<uint64_t> newDimensionSizesView{tensor_.getDimensionSizes()};
 
         const uint64_t itemCount = tensor_.updateInnerState();
         const uint64_t dimensionCount = tensor_.getNumberOfDimensions();
@@ -357,37 +357,12 @@ namespace gema{
     template <class T>
     void TensorParallel<T>::resize(const LinearContainer<uint64_t>& newDimensionSizes){
 
-        // const LinearContainer<uint64_t> oldDimensionSizes = dimensionSizes_;
-        // dimensionSizes_ = LinearContainer(newDimensionSizes);
-        // const uint64_t newItemCount = updateDimensionJump();
-
-        // // New allocation because it is likely anyway, even if tensor_.resize() would be used
-        // // Because even change of 1 to any dimension size likely means multiplicative increase/decrease in item count
-        // LinearContainer<T> newTensor(newItemCount);
-
-        // LinearContainer<uint64_t> currentCoordsSource(oldDimensionSizes.size());
-        // currentCoordsSource.fill(0);
-
-        // for(uint64_t i = 0; i < tensor_.size(); i++){
-
-        //     if(isValidCoordinates(currentCoordsSource)){
-        //         uint64_t destinationIndex = getIndex(currentCoordsSource);
-        //         newTensor[destinationIndex] = std::move(tensor_[i]);
-        //     }
-
-        //     incrementCoords(currentCoordsSource, oldDimensionSizes);
-        // }
-        
-        // tensor_ = std::move(newTensor);
-
-
-
         const MetadataContainer oldDimensionSizes = tensor_.getDimensionSizes();
         span_view<uint64_t> oldDimensionSizesView(oldDimensionSizes);
         const uint64_t dimensionCount = oldDimensionSizes.size();
         const uint64_t oldItemCount = tensor_.getNumberOfItems();
 
-        tensor_.dimensionSizes_ = newDimensionSizes.copyToBackend(MetadataBackend(queue_));
+        tensor_.getDimensionSizes() = newDimensionSizes.copyToBackend(MetadataBackend(queue_));
 
         const uint64_t newItemCount = tensor_.updateInnerState();
         span_view<uint64_t> newDimensionSizesView(tensor_.getDimensionSizes());
@@ -416,12 +391,15 @@ namespace gema{
         
         sycl::free(coordsBuffer, *queue_);
 
-        tensor_.tensor_ = std::move(newData);
+        tensor_.getDataContainer() = std::move(newData);
     }
 
     template <class T>
     void TensorParallel<T>::resize(const uint64_t newDimensionSize, const uint64_t dimensionIndex){
-
+        // too many copies, just temporary solution
+        LinearContainer<uint64_t> newDimensionSizes = tensor_.dimensionSizes_.copyToBackend(MemoryBackend<T>());
+        newDimensionSizes[dimensionIndex] = newDimensionSize;
+        resize(newDimensionSizes);
     }
 
     template <class T>
@@ -581,4 +559,24 @@ namespace gema{
             });
         }).wait();
     }
+
+    // template <class T>
+    // uint64_t TensorParallel<T>::getIndex(span_view<uint64_t> coordinates) const{
+    //     return TensorParallel<T>::getIndex(coordinates, tensor_.getDimensionSizes());
+    // }
+
+    // template <class T>
+    // uint64_t TensorParallel<T>::getIndex(span_view<uint64_t> coordinates, span_view<uint64_t> dimensionSizes){
+
+    //     uint64_t* hostCoordinates = sycl::malloc_host<uint64_t>(coordinates.size());
+    //     queue_->memcpy(host, coordinates.data(), coordinates.size() * sizeof(uint64_t));
+
+    //     uint64_t itemIndex = 0;
+    //     const uint64_t dimensionCount = dimensionSizes.size();
+    //     for (size_t i = 0; i < dimensionCount; ++i){
+    //         itemIndex = itemIndex * dimensionSizes[i] + hostCoordinates[i];
+    //     }
+
+    //     return itemIndex;
+    // }
 }

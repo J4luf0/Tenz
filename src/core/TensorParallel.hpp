@@ -182,6 +182,15 @@ class TensorParallel : /*public Tensor<T>,*/public AbstractOperation<TensorParal
     template <apply_to_item_callable<T> C>
     void applyToItem(span_view<uint64_t> coords, C&& operation);
 
+
+
+
+    // LinearContainer<uint64_t, MetadataBackend> getCoords(uint64_t itemIndex) const;
+    // static void getCoords(uint64_t itemIndex, span_view<uint64_t> dimensionSizes, uint64_t* coordsBuffer);
+
+    // uint64_t getIndex(span_view<uint64_t> coordinates) const;
+    // static uint64_t getIndex(span_view<uint64_t> coordinates, span_view<uint64_t> dimensionSizes);
+
 };
 
 }

@@ -206,6 +206,7 @@ class Tensor : public AbstractOperation<Tensor<T, DataMB, MetadataMB>> {
      * @return Vector containing one int per dimension with value of its size.
     */
     const LinearContainer<uint64_t, MetadataMB>& getDimensionSizes() const;
+    LinearContainer<uint64_t, MetadataMB>& getDimensionSizes();
 
     /** -----------------------------------------------------------------------------------------------------------------------
      * @brief Gets the number of dimensions of a tensor.

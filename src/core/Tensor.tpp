@@ -288,6 +288,11 @@ namespace gema {
     }
 
     template <class T, MemoryBackendConcept<T> DataMB, MemoryBackendConcept<uint64_t> MetadataMB>
+    LinearContainer<uint64_t, MetadataMB>& Tensor<T, DataMB, MetadataMB>::getDimensionSizes(){
+        return dimensionSizes_;
+    }
+
+    template <class T, MemoryBackendConcept<T> DataMB, MemoryBackendConcept<uint64_t> MetadataMB>
     uint64_t Tensor<T, DataMB, MetadataMB>::getNumberOfDimensions() const{
         return dimensionSizes_.size();
     }
