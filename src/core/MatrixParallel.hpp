@@ -7,12 +7,19 @@
 
 namespace gema{
 
-template<class T, TensorType<T> ITensor = TensorParallel<T>>
-class MatrixParallel : Matrix<T>{
+template <typename T>
+using MatrixParallel = Matrix<T, TensorParallel<T>>;
 
-    private:
+// template<class T>
+// class MatrixParallel : public Matrix<T, TensorParallel<T>>{
 
-};
+//     private:
+
+//     public:
+
+//     using Matrix<T, TensorParallel<T>>::Matrix;
+
+// };
 
 }
 

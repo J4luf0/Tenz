@@ -55,8 +55,14 @@ namespace gema {
         return tensor_.getData();
     }
 
+    // template <class T, TensorConcept TensorContainer>
+    // Matrix<T, TensorContainer>& Matrix<T, TensorContainer>::setData(const DataContainer& matrixItems){
+    //     tensor_.setData(matrixItems);
+    //     return *this;
+    // }
+
     template <class T, TensorConcept TensorContainer>
-    Matrix<T, TensorContainer>& Matrix<T, TensorContainer>::setData(const DataContainer& matrixItems){
+    Matrix<T, TensorContainer> &Matrix<T, TensorContainer>::setData(const LinearContainer<T> &matrixItems){
         tensor_.setData(matrixItems);
         return *this;
     }
@@ -212,12 +218,13 @@ namespace gema {
     Matrix<T, TensorContainer>::~Matrix(){
         
     }
+
     template <class T, TensorConcept TensorContainer>
     Matrix<T, TensorContainer>::MetadataContainer Matrix<T, TensorContainer>::getCoords(uint64_t itemIndex) const{
 
-        MetadataContainer coords(2);
-
         const MetadataContainer& dimensionSizes = tensor_.getDimensionSizes();
+        
+        MetadataContainer coords(2, dimensionSizes.getMemoryBackend());
 
         coords[0] = itemIndex / dimensionSizes[1];
         coords[1] = itemIndex % dimensionSizes[1];

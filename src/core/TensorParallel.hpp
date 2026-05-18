@@ -33,6 +33,8 @@ class TensorParallel : /*public Tensor<T>,*/public AbstractOperation<TensorParal
     static_assert(sycl::is_device_copyable_v<T>);
     static_assert(std::is_trivially_copyable_v<T>);
 
+    public:
+
     inline static sycl::queue queueGlobal_{sycl::property::queue::in_order{}};
 
     constexpr static sycl::usm::alloc usmDataKind_ = sycl::usm::alloc::device;
@@ -43,6 +45,8 @@ class TensorParallel : /*public Tensor<T>,*/public AbstractOperation<TensorParal
 
     using DataContainer = LinearContainer<T, DataBackend>;
     using MetadataContainer = LinearContainer<uint64_t, MetadataBackend>;
+
+    private:
 
     sycl::queue* queue_ = &queueGlobal_;
 
@@ -100,6 +104,7 @@ class TensorParallel : /*public Tensor<T>,*/public AbstractOperation<TensorParal
     const T* getData() const;
 
     TensorParallel<T>& setData(const LinearContainer<T>& tensorItems);
+    //TensorParallel<T>& setData(const DataContainer& tensorItems);
 
 
     bool isValidCoordinates(span_view<uint64_t> coords) const;

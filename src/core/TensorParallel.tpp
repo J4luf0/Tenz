@@ -2,6 +2,7 @@
 
 #include <sycl/sycl.hpp>
 
+#include "Utils.hpp"
 #include "TensorParallel.hpp"
 #include "MemoryBackendUSM.hpp"
 
@@ -145,6 +146,12 @@ namespace gema{
         tensor_.setData(tensorItems.copyToBackend(DataBackend(queue_)));
         return *this;
     }
+
+    // template <class T>
+    // TensorParallel<T> &TensorParallel<T>::setData(const DataContainer& tensorItems){
+    //     tensor_.setData(tensorItems);
+    //     return *this;
+    // }
 
     template <class T>
     bool TensorParallel<T>::isValidCoordinates(span_view<uint64_t> coords) const {
@@ -342,12 +349,74 @@ namespace gema{
 
         }).wait();
 
+        sycl::free(coordsBuffer, *queue_);
+
         tensor_.getDataContainer() = std::move(newData);
     }
 
     template <class T>
     void TensorParallel<T>::resize(const LinearContainer<uint64_t>& newDimensionSizes){
 
+        // const LinearContainer<uint64_t> oldDimensionSizes = dimensionSizes_;
+        // dimensionSizes_ = LinearContainer(newDimensionSizes);
+        // const uint64_t newItemCount = updateDimensionJump();
+
+        // // New allocation because it is likely anyway, even if tensor_.resize() would be used
+        // // Because even change of 1 to any dimension size likely means multiplicative increase/decrease in item count
+        // LinearContainer<T> newTensor(newItemCount);
+
+        // LinearContainer<uint64_t> currentCoordsSource(oldDimensionSizes.size());
+        // currentCoordsSource.fill(0);
+
+        // for(uint64_t i = 0; i < tensor_.size(); i++){
+
+        //     if(isValidCoordinates(currentCoordsSource)){
+        //         uint64_t destinationIndex = getIndex(currentCoordsSource);
+        //         newTensor[destinationIndex] = std::move(tensor_[i]);
+        //     }
+
+        //     incrementCoords(currentCoordsSource, oldDimensionSizes);
+        // }
+        
+        // tensor_ = std::move(newTensor);
+
+
+
+        const MetadataContainer oldDimensionSizes = tensor_.getDimensionSizes();
+        span_view<uint64_t> oldDimensionSizesView(oldDimensionSizes);
+        const uint64_t dimensionCount = oldDimensionSizes.size();
+        const uint64_t oldItemCount = tensor_.getNumberOfItems();
+
+        tensor_.dimensionSizes_ = newDimensionSizes.copyToBackend(MetadataBackend(queue_));
+
+        const uint64_t newItemCount = tensor_.updateInnerState();
+        span_view<uint64_t> newDimensionSizesView(tensor_.getDimensionSizes());
+
+        DataContainer newData(newItemCount, tensor_.getDataContainer().getMemoryBackend());
+
+        T* oldDataRaw = tensor_.getData();
+        T* newDataRaw = newData.data();
+
+        uint64_t* coordsBuffer = sycl::malloc_device<uint64_t>(oldItemCount * dimensionCount, *queue_);
+
+        queue_->parallel_for(oldItemCount, [=](sycl::id<1> idx){
+
+            size_t i = idx[0];
+
+            uint64_t* coords = coordsBuffer + i * dimensionCount;
+            Tensor<T, DataBackend, MetadataBackend>::getCoords(i, oldDimensionSizesView, coords);
+            span_view<uint64_t> coordsView = {coords, dimensionCount};
+            
+            if(Tensor<T, DataBackend, MetadataBackend>::isValidCoordinates(coordsView, newDimensionSizesView)){
+                uint64_t destinationIndex = 
+                    Tensor<T, DataBackend, MetadataBackend>::getIndex(coordsView, newDimensionSizesView);
+                newDataRaw[destinationIndex] = std::move(oldDataRaw[i]);
+            }
+        }).wait();
+        
+        sycl::free(coordsBuffer, *queue_);
+
+        tensor_.tensor_ = std::move(newData);
     }
 
     template <class T>

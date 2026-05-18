@@ -8,7 +8,7 @@
 namespace gema{
 
 template<class T, TensorConcept TensorContainer = Tensor<T>>
-class Matrix{
+class Matrix : public AbstractOperation<Matrix<T, TensorContainer>>{
 
     using DataContainer = TensorContainer::DataContainer;
     using MetadataContainer = TensorContainer::MetadataContainer;
@@ -41,7 +41,8 @@ class Matrix{
 
     DataContainer& getData();
 
-    Matrix<T, TensorContainer>& setData(const DataContainer& matrixItems);
+    //Matrix<T, TensorContainer>& setData(const DataContainer& matrixItems);
+    Matrix<T, TensorContainer>& setData(const LinearContainer<T>& matrixItems);
 
     std::string toString() const;
 

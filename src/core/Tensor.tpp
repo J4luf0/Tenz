@@ -326,7 +326,7 @@ namespace gema {
     }
 
     template <class T, MemoryBackendConcept<T> DataMB, MemoryBackendConcept<uint64_t> MetadataMB>
-    const Tensor<T, DataMB, MetadataMB>::DataContainer &Tensor<T, DataMB, MetadataMB>::getDataContainer() const{
+    const Tensor<T, DataMB, MetadataMB>::DataContainer& Tensor<T, DataMB, MetadataMB>::getDataContainer() const{
         return tensor_;
     }
 

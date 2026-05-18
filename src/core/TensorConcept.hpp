@@ -117,7 +117,7 @@ concept TensorConcept = requires(
     { ctensor.getNumberOfDimensions() } -> std::same_as<uint64_t>;
     { ctensor.getNumberOfItems() } -> std::same_as<uint64_t>;
 
-    { tensor.getItem(coordsInput) } -> std::convertible_to<T&>;//todo: really convertible? find way around
+    { tensor.getItem(coordsInput) } -> std::convertible_to<T>;//todo: is T really convertible to T? nope duh
     { tensor.setItem(itemInput, coordsInput) } -> std::same_as<void>;
     { tensor.getData() } -> std::convertible_to<T*>;
     { ctensor.getData() } -> std::convertible_to<const T*>;
