@@ -201,7 +201,7 @@ namespace gema {
 
         if constexpr (Kind == sycl::usm::alloc::device) {
 
-            queue_->memcpy(dest, first, n * sizeof(T));//.wait();
+            queue_->memcpy(dest, first, n * sizeof(T)).wait();
 
         } else {
 
@@ -222,7 +222,7 @@ namespace gema {
 
         if constexpr (Kind == sycl::usm::alloc::device) {
 
-            queue_->memcpy(dest, first, n * sizeof(T));//.wait();
+            queue_->memcpy(dest, first, n * sizeof(T)).wait();
 
         } else {
 

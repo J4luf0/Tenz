@@ -239,7 +239,13 @@ TEST(matrix_test, matrixMultiplication_001){
 
     matrix.matrixMultiplication(matrix2);
 
-    // TODO: finish
+    Matrix<int> expected(2, 2);
+    expected.setData({
+        19, 22,
+        43, 50
+    });
+
+    EXPECT_EQ(matrix, expected);
 }
 
 TEST(matrix_test, inverse_001){
@@ -247,7 +253,26 @@ TEST(matrix_test, inverse_001){
     Matrix<double> matrix(2, 2);
     matrix.setData({1, 2, 3, 4});
 
-    // TODO: finish
+    Matrix<double> inverse = matrix.inverse();
+
+    Matrix<double> expected(2, 2);
+    expected.setData({
+        -2.0,  1.0,
+         1.5, -0.5
+    });
+
+    constexpr double epsilon = 1e-9;
+
+    for(uint64_t i = 0; i < 2; ++i){
+        for(uint64_t j = 0; j < 2; ++j){
+
+            EXPECT_NEAR(
+                inverse.getItem(i, j),
+                expected.getItem(i, j),
+                epsilon
+            );
+        }
+    }
 }
 
 TEST(matrix_test, inverseInPlace_001){
@@ -255,5 +280,24 @@ TEST(matrix_test, inverseInPlace_001){
     Matrix<double> matrix(2, 2);
     matrix.setData({1, 2, 3, 4});
 
-    // TODO: finish
+    matrix.inverseInPlace();
+
+    Matrix<double> expected(2, 2);
+    expected.setData({
+        -2.0,  1.0,
+         1.5, -0.5
+    });
+
+    constexpr double epsilon = 1e-9;
+
+    for(uint64_t i = 0; i < 2; ++i){
+        for(uint64_t j = 0; j < 2; ++j){
+
+            EXPECT_NEAR(
+                matrix.getItem(i, j),
+                expected.getItem(i, j),
+                epsilon
+            );
+        }
+    }
 }

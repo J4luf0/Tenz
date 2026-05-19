@@ -304,7 +304,11 @@ namespace gema {
 
     template <class T, MemoryBackendConcept<T> DataMB, MemoryBackendConcept<uint64_t> MetadataMB>
     T& Tensor<T, DataMB, MetadataMB>::getItem(span_view<uint64_t> coordinates){
+        return tensor_[getIndex(coordinates)];
+    }
 
+    template <class T, MemoryBackendConcept<T> DataMB, MemoryBackendConcept<uint64_t> MetadataMB>
+    const T &Tensor<T, DataMB, MetadataMB>::getItem(span_view<uint64_t> coordinates) const{
         return tensor_[getIndex(coordinates)];
     }
 

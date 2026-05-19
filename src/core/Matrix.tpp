@@ -41,13 +41,15 @@ namespace gema {
     }
 
     template <class T, TensorConcept TensorContainer>
-    T Matrix<T, TensorContainer>::getItem(const uint64_t x, const uint64_t y){
-        return tensor_.getItem({x, y});
+    T Matrix<T, TensorContainer>::getItem(const uint64_t x, const uint64_t y) const{
+        uint64_t index = getIndex({x, y});
+        return tensor_.getDataContainer().get(index);
     }
 
     template <class T, TensorConcept TensorContainer>
     void Matrix<T, TensorContainer>::setItem(const T& value, const uint64_t x, const uint64_t y){
-        tensor_.setItem(value, {x, y});
+        uint64_t index = getIndex({x, y});
+        tensor_.getDataContainer().set(index, value);
     }
 
     template <class T, TensorConcept TensorContainer>
@@ -121,17 +123,108 @@ namespace gema {
 
     template <class T, TensorConcept TensorContainer>
     Matrix<T, TensorContainer> Matrix<T, TensorContainer>::inverse() const{
-        // TODO: insert return statement here
+
+        const uint64_t n = getDimensionSizes()[0];
+
+        if(n != getDimensionSizes()[1]){
+            throw std::runtime_error("Inverse requires square matrix.");
+        }
+
+        DefaultEquals<T> defaultEquals;
+
+        // Left side = original matrix
+        Matrix<T, TensorContainer> left(*this);
+
+        // Right side = identity matrix
+        Matrix<T, TensorContainer> right(n, n);
+        right.fillWith(static_cast<T>(0));
+
+        for(uint64_t i = 0; i < n; ++i){
+            right.setItem(static_cast<T>(1), i, i);
+        }
+
+        // Gauss-Jordan elimination
+        for(uint64_t pivot = 0; pivot < n; ++pivot){
+
+            T pivotValue = left.getItem(pivot, pivot);
+
+            if(defaultEquals(pivotValue, static_cast<T>(0))){
+                throw std::runtime_error("Matrix is singular.");
+            }
+
+            std::vector<T> leftPivotRow(n);
+            std::vector<T> rightPivotRow(n);
+
+            for(uint64_t col = 0; col < n; ++col){
+                leftPivotRow[col] = left.getItem(pivot, col) / pivotValue;
+                rightPivotRow[col] = right.getItem(pivot, col) / pivotValue;
+            }
+
+            // Normalize pivot row
+            for(uint64_t col = 0; col < n; ++col){
+                left.setItem(leftPivotRow[col], pivot, col);
+                right.setItem(rightPivotRow[col], pivot, col);
+            }
+
+            // Eliminate other rows
+            for(uint64_t row = 0; row < n; ++row){
+
+                if(row == pivot) continue;
+
+                T factor = left.getItem(row, pivot);
+
+                std::vector<T> leftCurrentRow(n);
+                std::vector<T> rightCurrentRow(n);
+
+                for(uint64_t col = 0; col < n; ++col){
+                    leftCurrentRow[col] = left.getItem(row, col);
+                    rightCurrentRow[col] = right.getItem(row, col);
+                }
+
+                for(uint64_t col = 0; col < n; ++col){
+                    left.setItem(leftCurrentRow[col] - (factor * leftPivotRow[col]), row, col);
+                    right.setItem(rightCurrentRow[col] - (factor * rightPivotRow[col]), row, col);
+                }
+            }
+        }
+
+        return right;
     }
 
     template <class T, TensorConcept TensorContainer>
     void Matrix<T, TensorContainer>::inverseInPlace(){
-
+        *this = inverse();
     }
 
     template <class T, TensorConcept TensorContainer>
-    void Matrix<T, TensorContainer>::matrixMultiplication(const Matrix<T, TensorContainer> &otherMatrix){
+    void Matrix<T, TensorContainer>::matrixMultiplication(const Matrix<T, TensorContainer>& otherMatrix){
 
+        const uint64_t m = getDimensionSizes()[0];
+        const uint64_t n = getDimensionSizes()[1];
+
+        const uint64_t otherRows = otherMatrix.getDimensionSizes()[0];
+        const uint64_t p = otherMatrix.getDimensionSizes()[1];
+
+        if(n != otherRows){
+            throw std::runtime_error("Matrix multiplication dimension mismatch.");
+        }
+
+        Matrix<T, TensorContainer> result(m, p);
+
+        for(uint64_t i = 0; i < m; ++i){
+            for(uint64_t j = 0; j < p; ++j){
+
+                T sum{};
+
+                for(uint64_t k = 0; k < n; ++k){
+                    sum += getItem(i, k) * otherMatrix.getItem(k, j);
+                }
+
+                result.setItem(sum, i, j);
+            }
+        }
+
+        *this = std::move(result);
     }
 
     template <class T, TensorConcept TensorContainer>

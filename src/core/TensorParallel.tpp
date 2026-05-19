@@ -110,7 +110,7 @@ namespace gema{
     }
 
     template <class T>
-    T TensorParallel<T>::getItem(span_view<uint64_t> coordinates){
+    T TensorParallel<T>::getItem(span_view<uint64_t> coordinates) const{
         //return tensor_.getItem(coordinates);
         const uint64_t index = tensor_.getIndex(coordinates);
         return tensor_.getDataContainer().get(index);
@@ -145,6 +145,16 @@ namespace gema{
     TensorParallel<T>& TensorParallel<T>::setData(const LinearContainer<T>& tensorItems){
         tensor_.setData(tensorItems.copyToBackend(DataBackend(queue_)));
         return *this;
+    }
+
+    template <class T>
+    TensorParallel<T>::DataContainer& TensorParallel<T>::getDataContainer(){
+        return tensor_.getDataContainer();
+    }
+
+    template <class T>
+    const TensorParallel<T>::DataContainer& TensorParallel<T>::getDataContainer() const{
+        return tensor_.getDataContainer();
     }
 
     // template <class T>

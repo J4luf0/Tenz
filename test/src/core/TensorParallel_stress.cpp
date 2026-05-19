@@ -15,7 +15,7 @@ using gema::Tensor;
 using gema::TensorParallel;
 using gema::LinearContainer;
 
-constexpr uint64_t globalMultiplier = 1;
+constexpr uint64_t globalMultiplier = 0;
 
 
 

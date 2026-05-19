@@ -96,7 +96,7 @@ class TensorParallel : /*public Tensor<T>,*/public AbstractOperation<TensorParal
     sycl::queue* getQueue();
 
 
-    T getItem(span_view<uint64_t> coordinates);
+    T getItem(span_view<uint64_t> coordinates) const;
 
     void setItem(const T& value, span_view<uint64_t> coordinates);
 
@@ -105,6 +105,9 @@ class TensorParallel : /*public Tensor<T>,*/public AbstractOperation<TensorParal
 
     TensorParallel<T>& setData(const LinearContainer<T>& tensorItems);
     //TensorParallel<T>& setData(const DataContainer& tensorItems);
+
+    DataContainer& getDataContainer();
+    const DataContainer& getDataContainer() const;
 
 
     bool isValidCoordinates(span_view<uint64_t> coords) const;

@@ -13,7 +13,7 @@ using gema::PoolUSM;
 using gema::Tensor;
 using gema::LinearContainer;
 
-constexpr uint64_t globalMultiplier = 1;
+constexpr uint64_t globalMultiplier = 0;
 
 
 

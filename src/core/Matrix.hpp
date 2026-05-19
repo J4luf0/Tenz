@@ -35,7 +35,7 @@ class Matrix : public AbstractOperation<Matrix<T, TensorContainer>>{
 
     uint64_t getNumberOfItems() const;
 
-    T getItem(const uint64_t x, const uint64_t y);
+    T getItem(const uint64_t x, const uint64_t y) const;
 
     void setItem(const T& value, const uint64_t x, const uint64_t y);
 

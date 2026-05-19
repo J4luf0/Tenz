@@ -231,6 +231,7 @@ class Tensor : public AbstractOperation<Tensor<T, DataMB, MetadataMB>> {
      * @return Item on the provided coordinates.
     */
     T& getItem(span_view<uint64_t> coordinates);
+    const T& getItem(span_view<uint64_t> coordinates) const;
 
     /** -----------------------------------------------------------------------------------------------------------------------
      * @brief Sets one value into tensor onto the desired coordinates.
