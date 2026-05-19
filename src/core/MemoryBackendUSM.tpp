@@ -12,13 +12,13 @@ namespace gema {
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(sycl::queue* queue_){
         this->queue_ = queue_;
-        MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
+        //MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(const MemoryBackendUSM<T, Kind, Alignment>& otherBackend)
     : queue_(otherBackend.queue_){
-        MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
+        //MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
@@ -26,37 +26,41 @@ namespace gema {
     MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(const MemoryBackendUSM<U, Kind, Alignment>& otherBackend)
     requires (!std::is_same_v<U, T>){
         queue_ = otherBackend.queue_;
-        MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
+        //MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(MemoryBackendUSM<T, Kind, Alignment>&& otherBackend) noexcept
     : queue_(otherBackend.queue_){
         //otherBackend.queue_ = nullptr;
-        MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
+        //MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(){
-        MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
+        //MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     MemoryBackendUSM<T, Kind, Alignment>::~MemoryBackendUSM(){
 
-        if(MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_sub(1, std::memory_order_acq_rel) == 1){
-            MemoryBackendUSM<T, Kind, Alignment>::freePool();
-        }
+        // if(MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_sub(1, std::memory_order_acq_rel) == 1){
+        //     MemoryBackendUSM<T, Kind, Alignment>::freePool();
+        // }
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     void MemoryBackendUSM<T, Kind, Alignment>::freePool(){
         for(const auto& keyValue : memoryPool_){
             for(const PoolBlock& block : keyValue.second){
-                sycl::free(block.ptr, keyValue.first.context);
+                sycl::free(block.ptr, *(keyValue.first.queue));
             }
         }
         memoryPool_.clear();
+        
+        // std::cout << "pool hit: " << MemoryBackendUSM<T, Kind, Alignment>::poolHit_.load() << std::endl
+        //           << "pool miss: " << MemoryBackendUSM<T, Kind, Alignment>::poolMiss_.load() << std::endl;
+
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
@@ -76,9 +80,31 @@ namespace gema {
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     T* MemoryBackendUSM<T, Kind, Alignment>::allocate(size_t n) const {
 
+        // if(n == 0) return nullptr;
+
+        // //std::size_t bytes = n * sizeof(T);
+
+        // return sycl::aligned_alloc<T>(Alignment, n, *queue_, Kind);
+
         if(n == 0) return nullptr;
 
-        //std::size_t bytes = n * sizeof(T);
+        PoolKey key{n * sizeof(T), Alignment, Kind, queue_};
+
+        {
+            std::lock_guard lock(poolMutex_);
+
+            auto it = memoryPool_.find(key);
+
+            if(it != memoryPool_.end() && !it->second.empty()){
+
+                void* ptr = it->second.back().ptr;
+                it->second.pop_back();
+                MemoryBackendUSM<T, Kind, Alignment>::poolHit_.fetch_add(1, std::memory_order_relaxed);
+                return static_cast<T*>(ptr);
+            }
+        }
+                
+        MemoryBackendUSM<T, Kind, Alignment>::poolMiss_.fetch_add(1, std::memory_order_relaxed);
 
         return sycl::aligned_alloc<T>(Alignment, n, *queue_, Kind);
     }
@@ -86,7 +112,15 @@ namespace gema {
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     void MemoryBackendUSM<T, Kind, Alignment>::deallocate(T* pos, size_t n) const {
 
-        sycl::free(pos, *queue_);
+        //sycl::free(pos, *queue_);
+
+        if(pos == nullptr) return;
+
+        PoolKey key{n * sizeof(T), Alignment, Kind, queue_};
+
+        std::lock_guard lock(poolMutex_);
+
+        memoryPool_[key].push_back(PoolBlock{static_cast<void*>(pos)});
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
@@ -118,6 +152,8 @@ namespace gema {
         //     });
         // }).wait();
 
+        if constexpr(std::is_trivially_destructible_v<T>) return;
+
         if constexpr (Kind == sycl::usm::alloc::device) {
             queue_->submit([&](sycl::handler& h){
                 h.single_task([=](){
@@ -137,6 +173,8 @@ namespace gema {
         //     (first + i)->~T();
         // }).wait();
 
+        if constexpr(std::is_trivially_destructible_v<T>) return;
+
         if constexpr (Kind == sycl::usm::alloc::device) {
             size_t n = last - first;
             queue_->parallel_for(n, [=](auto i){
@@ -154,7 +192,7 @@ namespace gema {
 
         if constexpr (Kind == sycl::usm::alloc::device) {
 
-            queue_->memcpy(dest, first, n * sizeof(T)).wait();
+            queue_->memcpy(dest, first, n * sizeof(T));//.wait();
 
         } else {
 
@@ -175,7 +213,7 @@ namespace gema {
 
         if constexpr (Kind == sycl::usm::alloc::device) {
 
-            queue_->memcpy(dest, first, n * sizeof(T)).wait();
+            queue_->memcpy(dest, first, n * sizeof(T));//.wait();
 
         } else {
 

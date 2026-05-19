@@ -19,10 +19,10 @@ class MemoryBackendUSM : public MemoryBackend<T, Alignment> {
         size_t bytes;
         size_t alignment;
         sycl::usm::alloc kind;
-        sycl::context context;
+        sycl::queue* queue;
 
         bool operator==(const PoolKey& other) const {
-            return bytes == other.bytes && alignment == other.alignment && kind == other.kind && context == other.context;
+            return bytes == other.bytes && alignment == other.alignment && kind == other.kind && queue == other.queue;
         }
     };
 
@@ -37,11 +37,19 @@ class MemoryBackendUSM : public MemoryBackend<T, Alignment> {
             size_t h1 = std::hash<size_t>{}(k.bytes);
             size_t h2 = std::hash<size_t>{}(k.alignment);
             size_t h3 = std::hash<int>{}(static_cast<int>(k.kind));
-            size_t h4 = std::hash<sycl::context>{}(k.context);
+            size_t h4 = std::hash<sycl::queue>{}(*(k.queue));
 
             return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);
         }
     };
+
+    struct Cleanup {
+
+        ~Cleanup() {
+            freePool();
+        }
+    };
+    static inline Cleanup cleanup_;
 
     static inline std::unordered_map<PoolKey, std::vector<PoolBlock>, PoolKeyHash> memoryPool_;
     static inline std::mutex poolMutex_;
@@ -50,6 +58,9 @@ class MemoryBackendUSM : public MemoryBackend<T, Alignment> {
     static void freePool();
 
     public:
+    
+    static inline std::atomic<size_t> poolHit_ = 0;
+    static inline std::atomic<size_t> poolMiss_ = 0;
 
     sycl::queue* queue_ = nullptr;
 

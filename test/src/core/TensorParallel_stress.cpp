@@ -415,3 +415,16 @@ TEST(tensorparallel_stress_test, division_001_control){
     }
 }
 
+
+TEST(tensorparallel_stress_test, stats){
+
+    TensorParallel<double> tensor = TensorParallel<double>({1});
+
+    const LinearContainer<uint64_t> dimensionSizes{16, 16, 16};
+    std::cout << "data pool hit: " << tensor.getTensor().getDataContainer().getMemoryBackend().poolHit_.load() << std::endl
+              << "data pool miss: " << tensor.getTensor().getDataContainer().getMemoryBackend().poolMiss_.load() << std::endl;
+
+    std::cout << "metadata pool hit: " << tensor.getDimensionSizes().getMemoryBackend().poolHit_.load() << std::endl
+              << "metadata pool miss: " << tensor.getDimensionSizes().getMemoryBackend().poolMiss_.load() << std::endl;
+}
+
