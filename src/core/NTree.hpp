@@ -6,26 +6,35 @@
 
 namespace gema{
 
-template<class T>
+template<class T, TensorConcept TensorContainer = Tensor<T>>
 class NTree{
+
+    public:
+
+    using DataContainer = TensorContainer::DataContainer;
+    using MetadataContainer = TensorContainer::MetadataContainer;
+    using NTreeMetadataContainer = LinearContainer<NTreeMetadataContainer>;
 
     private:
 
-    Tensor<T> tensor_;
+    TensorContainer tensor_;
 
-    std::vector<uint64_t> dimensionRestraints_;
+    LinearContainer<uint64_t> dimensionRestraints_;
 
-    std::vector<bool> indexMask_;
+    LinearContainer<bool> indexMask_;
 
 
 
     public:
 
-    NTree(const std::vector<uint64_t>& newTensorDimensionSizes,  const std::vector<uint64_t>& newNTreeRestraints);
+    NTree(
+        const LinearContainer<uint64_t>& newTensorDimensionSizes,  
+        const LinearContainer<LinearContainer<uint64_t>>& newNTreeRestraints
+    );
 
     NTree(const NTree<T>& otherNTree);
 
-    NTree(NTree&& otherNTree);
+    NTree(NTree<T>&& otherNTree) noexcept;
 
     NTree();
 
@@ -33,25 +42,25 @@ class NTree{
 
     uint64_t getNumberOfItems() const;
 
-    T& getItem(const std::vector<uint64_t>& coordinates);
+    T getItem(span_view<uint64_t> coordinates);
 
-    void setItem(const T& value, const std::vector<uint64_t>& coordinates);
+    void setItem(const T& value, span_view<uint64_t> coordinates);
 
-    LinearContainer<T>& getData();
+    T* getData();
 
-    Tensor<T>& setData(const LinearContainer<T>& tensorItems);
+    NTree& setData(const LinearContainer<T>& tensorItems);
 
     void fillWith(const T& fill);
 
     template <foreach_callable<T> C> 
-    inline void forEach(C&& operation);
+    void forEach(C&& operation);
 
     template <foreach_callable<T> C>
-    static void forEach(Tensor<T>& tensor, C&& operation);
+    static void forEach(NTree<T>& tensor, C&& operation);
 
-    bool CoordsValid(const std::vector<uint64_t>& coords) const;
+    bool isValidCoordinates(std::span<const uint64_t> coords) const;
 
-    std::array<uint64_t, 2> getLocalRange(const std::vector<uint64_t>& coords) const;
+    std::array<uint64_t, 2> getLocalRange(std::span<const uint64_t> coords) const;
 
     private:
 
