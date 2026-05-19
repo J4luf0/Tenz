@@ -239,7 +239,13 @@ TEST(matrixparallel_test, matrixMultiplication_001){
 
     matrix.matrixMultiplication(matrix2);
 
-    // TODO: finish
+    MatrixParallel<int> expected(2, 2);
+    expected.setData({
+        19, 22,
+        43, 50
+    });
+
+    EXPECT_EQ(matrix, expected);
 }
 
 TEST(matrixparallel_test, inverse_001){

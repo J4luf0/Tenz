@@ -1,4 +1,4 @@
-#include "Matrix.hpp"
+//#include "Matrix.hpp"
 
 namespace gema {
 
@@ -53,9 +53,15 @@ namespace gema {
     }
 
     template <class T, TensorConcept TensorContainer>
-    Matrix<T, TensorContainer>::DataContainer& Matrix<T, TensorContainer>::getData(){
+    T* Matrix<T, TensorContainer>::getData(){
         return tensor_.getData();
     }
+    
+    template <class T, TensorConcept TensorContainer>
+    const T* Matrix<T, TensorContainer>::getData() const {
+        return tensor_.getData();
+    }
+
 
     // template <class T, TensorConcept TensorContainer>
     // Matrix<T, TensorContainer>& Matrix<T, TensorContainer>::setData(const DataContainer& matrixItems){
@@ -197,7 +203,8 @@ namespace gema {
     }
 
     template <class T, TensorConcept TensorContainer>
-    void Matrix<T, TensorContainer>::matrixMultiplication(const Matrix<T, TensorContainer>& otherMatrix){
+    void Matrix<T, TensorContainer>::matrixMultiplication(const Matrix<T, TensorContainer>& otherMatrix)
+    requires (std::is_same_v<TensorContainer, Tensor<T>>){
 
         const uint64_t m = getDimensionSizes()[0];
         const uint64_t n = getDimensionSizes()[1];

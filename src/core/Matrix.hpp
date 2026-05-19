@@ -39,7 +39,8 @@ class Matrix : public AbstractOperation<Matrix<T, TensorContainer>>{
 
     void setItem(const T& value, const uint64_t x, const uint64_t y);
 
-    DataContainer& getData();
+    T* getData();
+    const T* getData() const;
 
     //Matrix<T, TensorContainer>& setData(const DataContainer& matrixItems);
     Matrix<T, TensorContainer>& setData(const LinearContainer<T>& matrixItems);
@@ -133,7 +134,11 @@ class Matrix : public AbstractOperation<Matrix<T, TensorContainer>>{
 
     void inverseInPlace();
 
-    void matrixMultiplication(const Matrix<T, TensorContainer>& otherMatrix);
+    void matrixMultiplication(const Matrix<T, TensorContainer>& otherMatrix)
+    requires (std::is_same_v<TensorContainer, Tensor<T>>);
+
+    void matrixMultiplication(const Matrix<T, TensorContainer>& otherMatrix)
+    requires (!std::is_same_v<TensorContainer, Tensor<T>>);
 
     
 
