@@ -239,7 +239,7 @@ TEST(tensorparallel_stress_test, construction_006_control){
 
 
 
-constexpr uint64_t transpositionMultiplier = 16 * globalMultiplier;
+constexpr uint64_t transpositionMultiplier = 256 * globalMultiplier;
 
 TEST(tensorparallel_stress_test, transposition_001){
 
@@ -256,13 +256,45 @@ TEST(tensorparallel_stress_test, transposition_001){
     }
 }
 
-
-
 TEST(tensorparallel_stress_test, transposition_001_control){
 
     const LinearContainer<uint64_t> dimensionSizes{16, 16, 16};
     const uint64_t numberOfDimensions = dimensionSizes.size();
     const uint64_t loopCount = transpositionMultiplier;
+
+    TensorParallel<int> tensor = TensorParallel<int>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        //tensor.transposition();
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensorparallel_stress_test, transposition_002){
+
+    PoolUSM::freePool();
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 16};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = transpositionMultiplier / 256;
+
+    TensorParallel<int> tensor = TensorParallel<int>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        tensor.transposition();
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensorparallel_stress_test, transposition_002_control){
+
+    PoolUSM::freePool();
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 16};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = transpositionMultiplier / 256;
 
     TensorParallel<int> tensor = TensorParallel<int>(dimensionSizes);
 
@@ -300,6 +332,46 @@ TEST(tensorparallel_stress_test, resize_001_control){
     const LinearContainer<uint64_t> dimensionSizes{16, 16, 16};
     const uint64_t numberOfDimensions = dimensionSizes.size();
     const uint64_t loopCount = resizeMultiplier;
+
+    TensorParallel<int> tensor = TensorParallel<int>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        uint64_t a = std::max(i % 16, 1ul);
+        uint64_t b = std::max((i + 6), 1ul);
+        uint64_t c = std::max((i + 12) % 16, 1ul);
+        //tensor.resize({a, b, c});
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensorparallel_stress_test, resize_002){
+
+    PoolUSM::freePool();
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 16};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = resizeMultiplier / 256;
+
+    TensorParallel<int> tensor = TensorParallel<int>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        uint64_t a = std::max(i % 16, 1ul);
+        uint64_t b = std::max((i + 6), 1ul);
+        uint64_t c = std::max((i + 12) % 16, 1ul);
+        tensor.resize({a, b, c});
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensorparallel_stress_test, resize_002_control){
+
+    PoolUSM::freePool();
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 16};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = resizeMultiplier / 256;
 
     TensorParallel<int> tensor = TensorParallel<int>(dimensionSizes);
 
@@ -381,11 +453,45 @@ TEST(tensorparallel_stress_test, addition_002_control){
     }
 }
 
+TEST(tensorparallel_stress_test, addition_003){
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 64};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = additionMultiplier / (256 * 16);
+
+    TensorParallel<int> tensor = TensorParallel<int>(dimensionSizes);
+    TensorParallel<int> tensor2 = TensorParallel<int>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        tensor2 += tensor;
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensorparallel_stress_test, addition_003_control){
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 64};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = additionMultiplier / (256 * 16);
+
+    TensorParallel<int> tensor = TensorParallel<int>(dimensionSizes);
+    TensorParallel<int> tensor2 = TensorParallel<int>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        //tensor2 += tensor;
+        doNotOptimizeAway(&i);
+    }
+}
+
 
 
 constexpr uint64_t divisionMultiplier = 256 * globalMultiplier;
 
 TEST(tensorparallel_stress_test, division_001){
+
+    PoolUSM::freePool();
 
     const LinearContainer<uint64_t> dimensionSizes{16, 16, 16};
     const uint64_t numberOfDimensions = dimensionSizes.size();
@@ -403,9 +509,83 @@ TEST(tensorparallel_stress_test, division_001){
 
 TEST(tensorparallel_stress_test, division_001_control){
 
+    PoolUSM::freePool();
+
     const LinearContainer<uint64_t> dimensionSizes{16, 16, 16};
     const uint64_t numberOfDimensions = dimensionSizes.size();
     const uint64_t loopCount = divisionMultiplier;
+
+    TensorParallel<double> tensor = TensorParallel<double>(dimensionSizes);
+    TensorParallel<double> tensor2 = TensorParallel<double>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        //tensor / tensor2;
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensorparallel_stress_test, division_002){
+
+    PoolUSM::freePool();
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 32};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = divisionMultiplier / (256);
+
+    TensorParallel<double> tensor = TensorParallel<double>(dimensionSizes);
+    TensorParallel<double> tensor2 = TensorParallel<double>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        tensor / tensor2;
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensorparallel_stress_test, division_002_control){
+
+    PoolUSM::freePool();
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 32};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = divisionMultiplier / (256);
+
+    TensorParallel<double> tensor = TensorParallel<double>(dimensionSizes);
+    TensorParallel<double> tensor2 = TensorParallel<double>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        //tensor / tensor2;
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensorparallel_stress_test, division_003){
+
+    PoolUSM::freePool();
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 16};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = divisionMultiplier / (256);
+
+    TensorParallel<double> tensor = TensorParallel<double>(dimensionSizes);
+    TensorParallel<double> tensor2 = TensorParallel<double>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        tensor / tensor2;
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensorparallel_stress_test, division_003_control){
+
+    PoolUSM::freePool();
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 16};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = divisionMultiplier / (256);
 
     TensorParallel<double> tensor = TensorParallel<double>(dimensionSizes);
     TensorParallel<double> tensor2 = TensorParallel<double>(dimensionSizes);

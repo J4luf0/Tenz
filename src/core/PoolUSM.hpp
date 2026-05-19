@@ -50,9 +50,9 @@ class PoolUSM{
     static inline std::mutex poolMutex_;
     static inline std::atomic<size_t> instanceCount_ = 0;
 
-    static void freePool();
-
     public:
+
+    static void freePool();
 
     static inline std::atomic<size_t> poolHit_ = 0;
     static inline std::atomic<size_t> poolMiss_ = 0;
