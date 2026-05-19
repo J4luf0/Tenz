@@ -2,6 +2,7 @@
 #define MEMORY_BACKEND_USM_HPP
 
 #include <cstddef>
+#include <unordered_map>
 
 #include <sycl/sycl.hpp>
 
@@ -13,6 +14,40 @@ template<class T, sycl::usm::alloc Kind, size_t Alignment = 64>
 class MemoryBackendUSM : public MemoryBackend<T, Alignment> {
 
     private:
+
+    struct PoolKey {
+        size_t bytes;
+        size_t alignment;
+        sycl::usm::alloc kind;
+        sycl::context context;
+
+        bool operator==(const PoolKey& other) const {
+            return bytes == other.bytes && alignment == other.alignment && kind == other.kind && context == other.context;
+        }
+    };
+
+    struct PoolBlock {
+        void* ptr;
+    };
+
+    struct PoolKeyHash {
+
+        size_t operator()(const PoolKey& k) const {
+
+            size_t h1 = std::hash<size_t>{}(k.bytes);
+            size_t h2 = std::hash<size_t>{}(k.alignment);
+            size_t h3 = std::hash<int>{}(static_cast<int>(k.kind));
+            size_t h4 = std::hash<sycl::context>{}(k.context);
+
+            return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);
+        }
+    };
+
+    static inline std::unordered_map<PoolKey, std::vector<PoolBlock>, PoolKeyHash> memoryPool_;
+    static inline std::mutex poolMutex_;
+    static inline std::atomic<size_t> instanceCount_ = 0;
+
+    static void freePool();
 
     public:
 
@@ -29,6 +64,7 @@ class MemoryBackendUSM : public MemoryBackend<T, Alignment> {
     MemoryBackendUSM(MemoryBackendUSM<T, Kind, Alignment>&& memoryBackend) noexcept;
     //MemoryBackendUSM() = delete;
     MemoryBackendUSM();
+    ~MemoryBackendUSM();
 
     MemoryBackendUSM<T, Kind, Alignment>& operator=(const MemoryBackendUSM<T, Kind, Alignment>& memoryBackend);
     MemoryBackendUSM<T, Kind, Alignment>& operator=(MemoryBackendUSM<T, Kind, Alignment>&& memoryBackend) noexcept;

@@ -347,6 +347,38 @@ TEST(tensorparallel_stress_test, addition_001_control){
     }
 }
 
+TEST(tensorparallel_stress_test, addition_002){
+
+    const LinearContainer<uint64_t> dimensionSizes{16, 16, 16};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = additionMultiplier;
+
+    TensorParallel<int> tensor = TensorParallel<int>(dimensionSizes);
+    TensorParallel<int> tensor2 = TensorParallel<int>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        tensor2 += tensor;
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensorparallel_stress_test, addition_002_control){
+
+    const LinearContainer<uint64_t> dimensionSizes{16, 16, 16};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = additionMultiplier;
+
+    TensorParallel<int> tensor = TensorParallel<int>(dimensionSizes);
+    TensorParallel<int> tensor2 = TensorParallel<int>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        //tensor2 += tensor;
+        doNotOptimizeAway(&i);
+    }
+}
+
 
 
 constexpr uint64_t divisionMultiplier = 256 * globalMultiplier;

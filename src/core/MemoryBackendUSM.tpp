@@ -12,11 +12,13 @@ namespace gema {
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(sycl::queue* queue_){
         this->queue_ = queue_;
+        MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
-    MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(const MemoryBackendUSM<T, Kind, Alignment>& otherBackend){
-        *this = otherBackend;
+    MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(const MemoryBackendUSM<T, Kind, Alignment>& otherBackend)
+    : queue_(otherBackend.queue_){
+        MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
@@ -24,17 +26,37 @@ namespace gema {
     MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(const MemoryBackendUSM<U, Kind, Alignment>& otherBackend)
     requires (!std::is_same_v<U, T>){
         queue_ = otherBackend.queue_;
+        MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(MemoryBackendUSM<T, Kind, Alignment>&& otherBackend) noexcept
     : queue_(otherBackend.queue_){
-        otherBackend.queue_ = nullptr;
+        //otherBackend.queue_ = nullptr;
+        MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     MemoryBackendUSM<T, Kind, Alignment>::MemoryBackendUSM(){
-        
+        MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    template <class T, sycl::usm::alloc Kind, size_t Alignment>
+    MemoryBackendUSM<T, Kind, Alignment>::~MemoryBackendUSM(){
+
+        if(MemoryBackendUSM<T, Kind, Alignment>::instanceCount_.fetch_sub(1, std::memory_order_acq_rel) == 1){
+            MemoryBackendUSM<T, Kind, Alignment>::freePool();
+        }
+    }
+
+    template <class T, sycl::usm::alloc Kind, size_t Alignment>
+    void MemoryBackendUSM<T, Kind, Alignment>::freePool(){
+        for(const auto& keyValue : memoryPool_){
+            for(const PoolBlock& block : keyValue.second){
+                sycl::free(block.ptr, keyValue.first.context);
+            }
+        }
+        memoryPool_.clear();
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>

@@ -1,6 +1,7 @@
 #ifndef NTREE_HPP
 #define NTREE_HPP
 
+#include "LinearContainer.hpp"
 #include "Tensor.hpp"
 
 namespace gema{
