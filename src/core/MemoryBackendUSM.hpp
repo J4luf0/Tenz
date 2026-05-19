@@ -15,52 +15,52 @@ class MemoryBackendUSM : public MemoryBackend<T, Alignment> {
 
     private:
 
-    struct PoolKey {
-        size_t bytes;
-        size_t alignment;
-        sycl::usm::alloc kind;
-        sycl::queue* queue;
+    // struct PoolKey {
+    //     size_t bytes;
+    //     size_t alignment;
+    //     sycl::usm::alloc kind;
+    //     sycl::queue* queue;
 
-        bool operator==(const PoolKey& other) const {
-            return bytes == other.bytes && alignment == other.alignment && kind == other.kind && queue == other.queue;
-        }
-    };
+    //     bool operator==(const PoolKey& other) const {
+    //         return bytes == other.bytes && alignment == other.alignment && kind == other.kind && queue == other.queue;
+    //     }
+    // };
 
-    struct PoolBlock {
-        void* ptr;
-    };
+    // struct PoolBlock {
+    //     void* ptr;
+    // };
 
-    struct PoolKeyHash {
+    // struct PoolKeyHash {
 
-        size_t operator()(const PoolKey& k) const {
+    //     size_t operator()(const PoolKey& k) const {
 
-            size_t h1 = std::hash<size_t>{}(k.bytes);
-            size_t h2 = std::hash<size_t>{}(k.alignment);
-            size_t h3 = std::hash<int>{}(static_cast<int>(k.kind));
-            size_t h4 = std::hash<sycl::queue>{}(*(k.queue));
+    //         size_t h1 = std::hash<size_t>{}(k.bytes);
+    //         size_t h2 = std::hash<size_t>{}(k.alignment);
+    //         size_t h3 = std::hash<int>{}(static_cast<int>(k.kind));
+    //         size_t h4 = std::hash<sycl::queue>{}(*(k.queue));
 
-            return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);
-        }
-    };
+    //         return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);
+    //     }
+    // };
 
-    struct Cleanup {
+    // struct Cleanup {
 
-        ~Cleanup() {
-            freePool();
-        }
-    };
-    static inline Cleanup cleanup_;
+    //     ~Cleanup() {
+    //         freePool();
+    //     }
+    // };
+    // static inline Cleanup cleanup_;
 
-    static inline std::unordered_map<PoolKey, std::vector<PoolBlock>, PoolKeyHash> memoryPool_;
-    static inline std::mutex poolMutex_;
-    static inline std::atomic<size_t> instanceCount_ = 0;
+    // static inline std::unordered_map<PoolKey, std::vector<PoolBlock>, PoolKeyHash> memoryPool_;
+    // static inline std::mutex poolMutex_;
+    // static inline std::atomic<size_t> instanceCount_ = 0;
 
-    static void freePool();
+    // static void freePool();
 
     public:
     
-    static inline std::atomic<size_t> poolHit_ = 0;
-    static inline std::atomic<size_t> poolMiss_ = 0;
+    // static inline std::atomic<size_t> poolHit_ = 0;
+    // static inline std::atomic<size_t> poolMiss_ = 0;
 
     sycl::queue* queue_ = nullptr;
 

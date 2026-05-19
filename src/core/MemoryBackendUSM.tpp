@@ -3,6 +3,7 @@
 #include <sycl/sycl.hpp>
 
 #include "Utils.hpp"
+#include "PoolUSM.hpp"
 #include "MemoryBackendUSM.hpp"
 
 //#define T_ALLOC_ALIGN class T, sycl::usm::alloc MemoryType, std::size_t Alignment
@@ -49,19 +50,19 @@ namespace gema {
         // }
     }
 
-    template <class T, sycl::usm::alloc Kind, size_t Alignment>
-    void MemoryBackendUSM<T, Kind, Alignment>::freePool(){
-        for(const auto& keyValue : memoryPool_){
-            for(const PoolBlock& block : keyValue.second){
-                sycl::free(block.ptr, *(keyValue.first.queue));
-            }
-        }
-        memoryPool_.clear();
+    // template <class T, sycl::usm::alloc Kind, size_t Alignment>
+    // void MemoryBackendUSM<T, Kind, Alignment>::freePool(){
+    //     for(const auto& keyValue : memoryPool_){
+    //         for(const PoolBlock& block : keyValue.second){
+    //             sycl::free(block.ptr, *(keyValue.first.queue));
+    //         }
+    //     }
+    //     memoryPool_.clear();
         
-        // std::cout << "pool hit: " << MemoryBackendUSM<T, Kind, Alignment>::poolHit_.load() << std::endl
-        //           << "pool miss: " << MemoryBackendUSM<T, Kind, Alignment>::poolMiss_.load() << std::endl;
+    //     // std::cout << "pool hit: " << MemoryBackendUSM<T, Kind, Alignment>::poolHit_.load() << std::endl
+    //     //           << "pool miss: " << MemoryBackendUSM<T, Kind, Alignment>::poolMiss_.load() << std::endl;
 
-    }
+    // }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
     MemoryBackendUSM<T, Kind, Alignment>& MemoryBackendUSM<T, Kind, Alignment>::operator=(
@@ -86,27 +87,31 @@ namespace gema {
 
         // return sycl::aligned_alloc<T>(Alignment, n, *queue_, Kind);
 
-        if(n == 0) return nullptr;
 
-        PoolKey key{n * sizeof(T), Alignment, Kind, queue_};
 
-        {
-            std::lock_guard lock(poolMutex_);
+        // if(n == 0) return nullptr;
 
-            auto it = memoryPool_.find(key);
+        // PoolKey key{n * sizeof(T), Alignment, Kind, queue_};
 
-            if(it != memoryPool_.end() && !it->second.empty()){
+        // {
+        //     std::lock_guard lock(poolMutex_);
 
-                void* ptr = it->second.back().ptr;
-                it->second.pop_back();
-                MemoryBackendUSM<T, Kind, Alignment>::poolHit_.fetch_add(1, std::memory_order_relaxed);
-                return static_cast<T*>(ptr);
-            }
-        }
+        //     auto it = memoryPool_.find(key);
+
+        //     if(it != memoryPool_.end() && !it->second.empty()){
+
+        //         void* ptr = it->second.back().ptr;
+        //         it->second.pop_back();
+        //         MemoryBackendUSM<T, Kind, Alignment>::poolHit_.fetch_add(1, std::memory_order_relaxed);
+        //         return static_cast<T*>(ptr);
+        //     }
+        // }
                 
-        MemoryBackendUSM<T, Kind, Alignment>::poolMiss_.fetch_add(1, std::memory_order_relaxed);
+        // MemoryBackendUSM<T, Kind, Alignment>::poolMiss_.fetch_add(1, std::memory_order_relaxed);
 
-        return sycl::aligned_alloc<T>(Alignment, n, *queue_, Kind);
+        // return sycl::aligned_alloc<T>(Alignment, n, *queue_, Kind);
+
+        return static_cast<T*>(PoolUSM::allocate(n * sizeof(T), queue_, Kind, Alignment));
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
@@ -114,13 +119,17 @@ namespace gema {
 
         //sycl::free(pos, *queue_);
 
-        if(pos == nullptr) return;
 
-        PoolKey key{n * sizeof(T), Alignment, Kind, queue_};
 
-        std::lock_guard lock(poolMutex_);
+        // if(pos == nullptr) return;
 
-        memoryPool_[key].push_back(PoolBlock{static_cast<void*>(pos)});
+        // PoolKey key{n * sizeof(T), Alignment, Kind, queue_};
+
+        // std::lock_guard lock(poolMutex_);
+
+        // memoryPool_[key].push_back(PoolBlock{static_cast<void*>(pos)});
+
+        PoolUSM::deallocate(static_cast<void*>(pos), n * sizeof(T), queue_, Kind, Alignment);
     }
 
     template <class T, sycl::usm::alloc Kind, size_t Alignment>
