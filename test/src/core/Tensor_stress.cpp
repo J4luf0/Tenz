@@ -17,7 +17,7 @@ constexpr uint64_t globalMultiplier = 1;
 
 
 
-constexpr uint64_t constructionMultiplier = 16 * 16 * globalMultiplier;
+constexpr uint64_t constructionMultiplier = 16 * 16 * 16 * globalMultiplier;
 
 TEST(tensor_stress_test, construction_001){
 
@@ -151,7 +151,27 @@ TEST(tensor_stress_test, construction_006_control){
     }
 }
 
+TEST(tensor_stress_test, construction_007){
 
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 256};
+
+    const uint64_t loopCount = (constructionMultiplier / 256);
+    for(uint64_t i = 0; i < loopCount; i++){
+        Tensor<int> tensor = Tensor<int>(dimensionSizes);
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensor_stress_test, construction_007_control){
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 256};
+
+    const uint64_t loopCount = (constructionMultiplier / 256);
+    for(uint64_t i = 0; i < loopCount; i++){
+        //Tensor<int> tensor = Tensor<int>(dimensionSizes);
+        doNotOptimizeAway(&i);
+    }
+}
 
 
 constexpr uint64_t getItemMultiplier = 256 * 256 * 16 * globalMultiplier;
@@ -470,6 +490,38 @@ TEST(tensor_stress_test, addition_003_control){
     uint64_t i = 0;
     for(; i < loopCount; i++){
         //tensor2 += tensor;
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensor_stress_test, addition_004){
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 64};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = additionMultiplier / (256 * 16);
+
+    Tensor<int> tensor = Tensor<int>(dimensionSizes);
+    Tensor<int> tensor2 = Tensor<int>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        tensor2 + tensor;
+        doNotOptimizeAway(&i);
+    }
+}
+
+TEST(tensor_stress_test, addition_004_control){
+
+    const LinearContainer<uint64_t> dimensionSizes{4096, 4096, 64};
+    const uint64_t numberOfDimensions = dimensionSizes.size();
+    const uint64_t loopCount = additionMultiplier / (256 * 16);
+
+    Tensor<int> tensor = Tensor<int>(dimensionSizes);
+    Tensor<int> tensor2 = Tensor<int>(dimensionSizes);
+
+    uint64_t i = 0;
+    for(; i < loopCount; i++){
+        //tensor2 + tensor;
         doNotOptimizeAway(&i);
     }
 }
