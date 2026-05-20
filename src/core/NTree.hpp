@@ -19,7 +19,7 @@ class NTree{
 
     TensorContainer tensor_;
 
-    LinearContainer<uint64_t> dimensionRestraints_;
+    LinearContainer<LinearContainer<uint64_t>> dimensionRestraints_;
 
     LinearContainer<bool> indexMask_;
 
@@ -64,9 +64,9 @@ class NTree{
 
     private:
 
+    void updateVirtualMask();
 
-
-
+    LinearContainer<uint64_t> restrainsFromCoords(std::span<const uint64_t> coords) const;
 
 
 };
