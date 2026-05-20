@@ -13,7 +13,6 @@ class NTree{
 
     using DataContainer = TensorContainer::DataContainer;
     using MetadataContainer = TensorContainer::MetadataContainer;
-    using NTreeMetadataContainer = LinearContainer<NTreeMetadataContainer>;
 
     private:
 
@@ -48,25 +47,31 @@ class NTree{
 
     T* getData();
 
-    NTree& setData(const LinearContainer<T>& tensorItems);
+    //NTree& setData(const LinearContainer<T>& tensorItems);
 
     void fillWith(const T& fill);
 
-    template <foreach_callable<T> C> 
-    void forEach(C&& operation);
+    // template <foreach_callable<T> C> 
+    // void forEach(C&& operation);
 
-    template <foreach_callable<T> C>
-    static void forEach(NTree<T>& tensor, C&& operation);
+    // template <foreach_callable<T> C>
+    // static void forEach(NTree<T>& tensor, C&& operation);
 
     bool isValidCoordinates(std::span<const uint64_t> coords) const;
+
+    bool isValidCoordinatesFast(std::span<const uint64_t> coords) const;
 
     std::array<uint64_t, 2> getLocalRange(std::span<const uint64_t> coords) const;
 
     private:
 
+    uint64_t autoGetLength(std::span<const uint64_t> coords) const;
+
     void updateVirtualMask();
 
     LinearContainer<uint64_t> restrainsFromCoords(std::span<const uint64_t> coords) const;
+
+    static bool isRestraintsValid(const LinearContainer<LinearContainer<uint64_t>>& restraints, std::span<const uint64_t> dimensionSizes);
 
 
 };
